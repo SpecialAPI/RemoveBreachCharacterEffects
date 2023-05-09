@@ -14,7 +14,7 @@ namespace RemoveBreachCharacterEffects
     {
         public const string GUID = "spapi.etg.removebreachcharactereffects";
         public const string NAME = "Remove Base-Specific Breach CC Effects";
-        public const string VERSION = "1.0.0";
+        public const string VERSION = "1.0.1";
         public static List<string> NameShortsRemoved = new List<string>();
 
         public void Awake()
@@ -24,6 +24,16 @@ namespace RemoveBreachCharacterEffects
                 NameShortsRemoved.AddRange(File.ReadAllLines(file).Select(x => $"player{x.ToLowerInvariant()}"));
             }
             new Harmony(GUID).PatchAll();
+        }
+
+        [HarmonyPatch(typeof(PlayerController), nameof(PlayerController.Start))]
+        [HarmonyPostfix]
+        public static void RemoveMarineHelmet(PlayerController __instance)
+        {
+            if (NameShortsRemoved.Contains(__instance.name.ToLowerInvariant().Replace("(clone)", "")))
+            {
+                __instance.lostAllArmorVFX = __instance.lostAllArmorAltVfx = null;
+            }
         }
 
         [HarmonyPatch(typeof(FoyerCharacterSelectFlag), nameof(FoyerCharacterSelectFlag.Start))]
@@ -41,7 +51,7 @@ namespace RemoveBreachCharacterEffects
                 var idledoer = __instance.GetComponent<CharacterSelectIdleDoer>();
                 if(idledoer != null)
                 {
-                    idledoer.phases.Do(x => x.vfxTrigger = CharacterSelectIdlePhase.VFXPhaseTrigger.NONE);
+                    idledoer.phases.Do(x => { x.vfxTrigger = CharacterSelectIdlePhase.VFXPhaseTrigger.NONE; x.endVFXSpriteAnimator = null; });
                 }
                 var dog = __instance.transform.Find("Doggy");
                 if(dog != null)
